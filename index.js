@@ -42,10 +42,9 @@ const firebaseConfig = {
   appId: "1:979642314448:web:221ee30e8c334258f1b8d5",
   measurementId: "G-68QCZKDLLP"
 };
-
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
-
+firebase.storage();
 let isUserInteracted = false;
 
 document.addEventListener('click', () => {
@@ -127,8 +126,7 @@ async function send() {
     console.log(JSON.stringify(messages))
   }
 
-  if(messageText.includes("script") || messageText.includes("window") || messageText.includes("<style>") || messageText.includes("document")) return;
-  if(username.includes("script") || username.includes("window") || username.includes("<style>") || username.includes("document")) return;
+  banwords.forEach((element) => { if(messageText.includes(element) || username.includes(element)) return; })
   if (!username) {
     username = "Anonymous";
   }
