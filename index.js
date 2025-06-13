@@ -1,6 +1,16 @@
 let refreshInterval;
 const REFRESH_DELAY = 3000;
-const banwords = ["alert", "onerror", "onload", "Audio", "document", "<style>", "window", "script"];
+const banwords = ["onerror", "onload", "onclick", "onmouseover", "onmouseenter", "onmouseleave",
+  "onmouseup", "onmousedown", "onmousemove", "onwheel", "oncontextmenu",
+  "onkeydown", "onkeypress", "onkeyup",
+  "onblur", "onfocus", "onsubmit", "onreset",
+  "onchange", "oninput", "oninvalid",
+  "onresize", "onscroll",
+  "onselect", "ondrag", "ondrop", "ondragstart", "ondragend", "ondragover",
+  "oncopy", "oncut", "onpaste",
+  "onanimationstart", "onanimationend", "onanimationiteration",
+  "ontransitionstart", "ontransitionend", "ontransitioncancel",
+  "onpointerdown", "onpointerup", "onpointermove", "onpointerenter", "onpointerleave", "onpointercancel", "window", "document", "audio", "script", "<style>"];
 
 function startAutoRefresh() {
   if (refreshInterval) {
@@ -21,16 +31,6 @@ function stopAutoRefresh() {
   }
 }
 
-document.addEventListener('DOMContentLoaded', () => {
-  if (!document.getElementById('messages-container')) {
-    const container = document.createElement('div');
-    container.id = 'messages-container';
-    document.body.appendChild(container);
-  }
-  
-  startAutoRefresh();
-});
-
 let messages = [];
 
 const firebaseConfig = {
@@ -42,9 +42,10 @@ const firebaseConfig = {
   appId: "1:979642314448:web:221ee30e8c334258f1b8d5",
   measurementId: "G-68QCZKDLLP"
 };
+
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
-firebase.storage();
+
 let isUserInteracted = false;
 
 document.addEventListener('click', () => {
@@ -53,7 +54,6 @@ document.addEventListener('click', () => {
 
 function loadMessages() {
   const old_length = messages.length;
-  console.log("loading messages...");
   db.collection("users").doc("user1").get()
     .then((doc) => {
       if (doc.exists) {
@@ -82,6 +82,29 @@ function loadMessages() {
 function filter(text) {
   return String(text).replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;").replaceAll("'", "&#39;");
 }
+function safeHTML(input) {
+  const allowedTags = ['b', 'strong', 'i', 'em', 'u', 's', 'sup', 'sub', 'small', 'big', 'code', 'br', 'mark', 'img', 'video'];
+  const div = document.createElement('div');
+  div.innerHTML = input;
+
+  const sanitize = (node) => {
+    if (node.nodeType === 3) return; // текст
+
+    if (node.nodeType === 1) {
+      if (!allowedTags.includes(node.tagName.toLowerCase())) {
+        node.replaceWith(...node.childNodes); // удалить тег, оставить содержимое
+      } else {
+        // удаляем все атрибуты, чтоб никакой onerror не проскочил
+        [...node.attributes].forEach(attr => node.removeAttribute(attr));
+      }
+    }
+
+    [...node.childNodes].forEach(sanitize);
+  };
+
+  [...div.childNodes].forEach(sanitize);
+  return div.innerHTML;
+}
 
 function displayMessages() {
   const container = document.getElementById('messages-container') || document.body;
@@ -99,16 +122,21 @@ function displayMessages() {
       time = new Date();
     }
 
-    if(msg.message.includes("script") || msg.message.toLowerCase().includes("window") || msg.message.includes("<style>") || msg.message.includes("document") || msg.message.includes("Audio") || msg.message.toLowerCase().includes("onerror") || msg.message.toLowerCase().includes("alert")) return;
-    if(msg.username.includes("script") || msg.username.toLowerCase().includes("window") || msg.username.includes("<style>") || msg.username.includes("document") || msg.message.includes("Audio") || msg.message.toLowerCase().includes("onerror") || msg.message.toLowerCase().includes("alert")) return;
-    // .replaceAll("<", "&lt;").replaceAll(">", "&gt;")
+    const lowerMessage = messageText.toLowerCase();
+    const lowerUsername = username.toLowerCase();
+    
+    if (
+      banwords.some(word => lowerMessage.includes(word)) ||
+      banwords.some(word => lowerUsername.includes(word))
+    ) return;
+
     messageElement.innerHTML = `
       <strong>${filter(msg.username)}</strong>
       <span style="color: #999999">
         - ${time.getDate().toString().padStart(2, '0')}.${(time.getMonth() + 1).toString().padStart(2, '0')}.${time.getFullYear()}
         ${time.getHours().toString().padStart(2, '0')}:${time.getMinutes().toString().padStart(2, '0')}:${time.getSeconds().toString().padStart(2, '0')} [${messages.findIndex(current_msg => {return current_msg == msg;}) + 1}]
       </span>
-      <br>${filter(msg.message)}
+      <br>${safeHTML(msg.message)}
     `;
     
     container.appendChild(messageElement);
@@ -122,17 +150,14 @@ function displayMessages() {
 async function send() {
   const username = document.getElementById("username-inp").value.trim() || 'Anonymous';
   const messageText = document.getElementById("message-inp").value.trim();
-  if(document.getElementById("log-inp").checked){
-    console.log(JSON.stringify(messages))
-  }
 
-  banwords.forEach((element) => { if(messageText.includes(element) || username.includes(element)) return; })
-  if (!username) {
-    username = "Anonymous";
-  }
+  if (
+    banwords.some(word => messageText.includes(word)) ||
+    banwords.some(word => username.includes(word))
+  ) return;
 
   const newMessage = {
-    username: username,
+    username,
     message: messageText,
     time: new Date()
   };
@@ -145,19 +170,28 @@ async function send() {
     }, { merge: true });
 
     document.getElementById("message-inp").value = '';
+    fileInput.value = '';
 
     displayMessages();
   } catch (error) {
-    if(document.getElementById("log-inp").checked){
-      console.error("Error occured", error);
+    if (document.getElementById("log-inp").checked) {
+      console.error("Error occurred", error);
     }
     messages.pop();
   }
 }
 
 document.addEventListener('DOMContentLoaded', () => {
+  if (!document.getElementById('messages-container')) {
+    const container = document.createElement('div');
+    container.id = 'messages-container';
+    document.body.appendChild(container);
+  }
+
+  startAutoRefresh();
   loadMessages();
-  if(document.getElementById("autoscroll-inp").checked){
+
+  if (document.getElementById("autoscroll-inp").checked) {
     window.scrollTo(0, document.body.scrollHeight);
   }
 });
