@@ -92,7 +92,8 @@ function safeHTML(input) {
   const allowedTags = ['a', 'b', 'strong', 'i', 'em', 'u', 's', 'sup', 'sub', 'small', 'big', 'code', 'br', 'mark', 'img', 'video', 'h1', 'h2', 'h3', 'ul', 'ol'];
   const allowedAttributes = {
     img: ['src', 'alt', 'width', 'height'],
-    video: ['src', 'controls', 'width', 'height']
+    video: ['src', 'controls', 'width', 'height'],
+    a: ['href', 'target', 'style']
   };
   
   const doc = new DOMParser().parseFromString(input, 'text/html');
