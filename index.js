@@ -231,7 +231,9 @@ async function send() {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
+  startAutoRefresh();
   loadMessages();
+  
   if(document.getElementById("autoscroll-inp")?.checked){
     window.scrollTo(0, document.body.scrollHeight);
   }
