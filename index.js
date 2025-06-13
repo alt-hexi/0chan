@@ -69,6 +69,7 @@ function loadMessages() {
           }
           if(old_length < messages.length) {
             displayMessages();
+            window.scrollTo(0, document.body.scrollHeight);
             if(isUserInteracted) {
               let sound = new Audio('sound/imsend.wav');
               sound.play().catch(e => console.log("Sound play error:", e));
@@ -88,7 +89,7 @@ function filter(text) {
 
 // thx 
 function safeHTML(input) {
-  const allowedTags = ['a', 'b', 'strong', 'i', 'em', 'u', 's', 'sup', 'sub', 'small', 'big', 'code', 'br', 'mark', 'img', 'video'];
+  const allowedTags = ['a', 'b', 'strong', 'i', 'em', 'u', 's', 'sup', 'sub', 'small', 'big', 'code', 'br', 'mark', 'img', 'video', 'h1', 'h2', 'h3', 'ul', 'ol'];
   const allowedAttributes = {
     img: ['src', 'alt', 'width', 'height'],
     video: ['src', 'controls', 'width', 'height']
@@ -148,6 +149,35 @@ function safeHTML(input) {
   const container = document.createElement('div');
   container.appendChild(fragment);
   return container.innerHTML;
+}
+
+function addLink(){
+  document.getElementById("message-inp").value += `<a href="${document.getElementById("link-inp").value}" target="_blank">${document.getElementById("prev-inp").value}</a>`
+}
+
+function addImage(){
+  document.getElementById("message-inp").value += `<img src="${document.getElementById("img-link-inp").value}" width="450">`
+}
+
+function addReply(){
+  const repliedMessage = messages[parseInt(document.getElementById("mention-inp").value) - 1]
+  if(repliedMessage.length >= 50){
+    document.getElementById("message-inp").value += `~Reply to <i>${repliedMessage.message.slice(0,50)}...</i><br><br>`
+  } else {
+    document.getElementById("message-inp").value += `~Reply to <i>${repliedMessage.message}</i><br><br>`
+  }
+}
+
+function switchAdvancedOptions(){
+  if(document.getElementById("adv-inp")?.checked) {
+    document.getElementById("options-panel").style.display = 'none';
+    document.getElementById("options-panel").style.height = "auto";
+    document.getElementById("options-panel").style.padding = "20px";
+  } else {
+    document.getElementById("options-panel").style.display = 'block';
+    document.getElementById("options-panel").style.height = "0";
+    document.getElementById("options-panel").style.margin = "0px";
+  }
 }
 
 function displayMessages() {

@@ -16,8 +16,22 @@
     <label>Message</label> <input placeholder="прив" id="message-inp"> <br>
     <button onclick="send()">Send</button> 
     <button onclick="window.location.href = 'stats.html'">Statistics</button> <br>
-    <input type="checkbox" checked="checked" id="autoscroll-inp" class="checkbox-label"> <label class="checkbox-label">Auto scroll</label><br>
+    <input type="checkbox" checked="checked" id="autoscroll-inp" class="checkbox-label"> <label class="checkbox-label">Auto scroll</label>
+    <input type="checkbox" id="adv-inp" class="checkbox-label" onclick="switchAdvancedOptions()"> <label class="checkbox-label">Hide advanced options</label><br>
     <input type="checkbox" id="log-inp" class="checkbox-label"> <label class="checkbox-label">Database logs</label> 
+
+    <div id="options-panel">
+        <label>Link</label> <input id="link-inp" style="width: 300px" placeholder="www.example.com"> 
+        <label>Preview</label> <input id="prev-inp" style="width: 300px" placeholder="Website"> <br>
+        <button onclick="addLink()">Add link</button> <br>
+
+        <label>Image link</label> <input id="img-link-inp" style="width: 400px" placeholder="www.example.com/img"> <br>
+        <button onclick="addImage()">Add image</button> <br>
+
+        <label>Reply to</label> <input id="mention-inp" style="width: 300px" placeholder="Message ID"> <br>
+        <button onclick="addReply()">Add image</button> <br>
+
+    </div>
 
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>

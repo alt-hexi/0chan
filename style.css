@@ -67,6 +67,7 @@ h3{
 
 a{
   text-decoration: none;
+  color: #ffff;
 }
 
 button{
@@ -74,9 +75,9 @@ button{
     color: #ffffff;
     background-color: #1b1b1b;
     border-color: #ffffff;
-    font-size: 1.5em;
-    padding: 10px 15px;
-    border-width: 0.01em;
+    font-size: 1em;
+    padding: 10px 10px;
+    border-width: 0.001em;
     border-radius: 5px;
     border: solid;
     cursor: pointer;
@@ -87,4 +88,12 @@ button:hover{
     color: #1b1b1b;
     background-color: #ffff;
     border-color: #ffff;
+}
+
+.options-panel[hidden] {
+    display: none;
+    opacity: 0;
+    margin: 0;
+    padding: 0;
+    height: 0;
 }
