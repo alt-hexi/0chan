@@ -87,43 +87,72 @@ function filter(text) {
 
 function safeHTML(input) {
   const allowedTags = ['b', 'strong', 'i', 'em', 'u', 's', 'sup', 'sub', 'small', 'big', 'code', 'br', 'mark', 'img', 'video'];
-  const div = document.createElement('div');
-  div.innerHTML = input;
-
-  const sanitize = (node) => {
-    if (node.nodeType === 3) return node; // Возвращаем текстовые узлы
-
-    if (node.nodeType === 1) {
-      if (!allowedTags.includes(node.tagName.toLowerCase())) {
-        // Заменяем запрещённый тег его содержимым
-        const fragment = document.createDocumentFragment();
-        fragment.append(...Array.from(node.childNodes).map(sanitize));
-        return fragment;
-      } else {
-        // Удаляем только опасные атрибуты (on*, style, srcset и т.д.)
-        const attrs = Array.from(node.attributes);
-        for (const attr of attrs) {
-          if (attr.name.startsWith('on') || attr.name === 'style' || attr.name === 'srcset') {
-            node.removeAttribute(attr.name);
-          }
-        }
-      }
-    }
-
-    // Обрабатываем дочерние элементы
-    const childNodes = Array.from(node.childNodes);
-    for (let i = 0; i < childNodes.length; i++) {
-      const sanitized = sanitize(childNodes[i]);
-      if (sanitized !== childNodes[i]) {
-        node.replaceChild(sanitized, childNodes[i]);
-      }
-    }
-
-    return node;
+  const allowedAttributes = {
+    img: ['src', 'alt', 'width', 'height'],
+    video: ['src', 'controls', 'width', 'height']
   };
-
-  sanitize(div);
-  return div.innerHTML;
+  
+  const doc = new DOMParser().parseFromString(input, 'text/html');
+  const sanitize = (node) => {
+    // Обработка текстовых узлов
+    if (node.nodeType === Node.TEXT_NODE) {
+      return node;
+    }
+    
+    // Обработка элементов
+    if (node.nodeType === Node.ELEMENT_NODE) {
+      const tagName = node.tagName.toLowerCase();
+      
+      // Удаляем запрещённые теги, оставляя их содержимое
+      if (!allowedTags.includes(tagName)) {
+        const fragment = document.createDocumentFragment();
+        Array.from(node.childNodes).forEach(child => {
+          fragment.appendChild(sanitize(child));
+        });
+        return fragment;
+      }
+      
+      // Удаляем запрещённые атрибуты
+      const allowedAttrs = allowedAttributes[tagName] || [];
+      Array.from(node.attributes).forEach(attr => {
+        const attrName = attr.name.toLowerCase();
+        if (!allowedAttrs.includes(attrName) || 
+            attrName.startsWith('on') || 
+            attrName === 'style') {
+          node.removeAttribute(attr.name);
+        }
+      });
+      
+      // Обрабатываем дочерние элементы
+      const children = Array.from(node.childNodes);
+      node.innerHTML = ''; // Очищаем содержимое
+      children.forEach(child => {
+        const sanitizedChild = sanitize(child);
+        if (sanitizedChild) {
+          node.appendChild(sanitizedChild);
+        }
+      });
+      
+      return node;
+    }
+    
+    return null;
+  };
+  
+  // Обрабатываем все узлы в документе
+  const body = doc.body;
+  const fragment = document.createDocumentFragment();
+  Array.from(body.childNodes).forEach(node => {
+    const sanitizedNode = sanitize(node);
+    if (sanitizedNode) {
+      fragment.appendChild(sanitizedNode);
+    }
+  });
+  
+  // Возвращаем HTML-строку
+  const container = document.createElement('div');
+  container.appendChild(fragment);
+  return container.innerHTML;
 }
 
 function displayMessages() {
@@ -153,12 +182,12 @@ function displayMessages() {
     ) return;
     // .replaceAll("<", "&lt;").replaceAll(">", "&gt;")
     messageElement.innerHTML = `
-      <strong>${filter(msg.username)}</strong>
+      <strong>${safeHTML(msg.username)}</strong>
       <span style="color: #999999">
         - ${time.getDate().toString().padStart(2, '0')}.${(time.getMonth() + 1).toString().padStart(2, '0')}.${time.getFullYear()}
         ${time.getHours().toString().padStart(2, '0')}:${time.getMinutes().toString().padStart(2, '0')}:${time.getSeconds().toString().padStart(2, '0')} [${messages.findIndex(current_msg => {return current_msg == msg;}) + 1}]
       </span>
-      <br>${filter(msg.message)}
+      <br>${safeHTML(msg.message)}
     `;
     
     container.appendChild(messageElement);
