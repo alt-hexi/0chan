@@ -12,16 +12,22 @@
     <div id="messages-container">
         <p>Loading messages...</p>
     </div>
-    <label>Username</label> <input placeholder="Anonymous" id="username-inp"> <br>
-    <label>Message</label> <input placeholder="прив" id="message-inp"> <br>
-    <button onclick="send()">Send</button> 
-    <button onclick="window.location.href = 'stats.html'">Statistics</button> <br>
-    <input type="checkbox" checked="checked" id="autoscroll-inp" class="checkbox-label"> <label class="checkbox-label">Auto scroll</label><br>
-    <input type="checkbox" id="log-inp" class="checkbox-label"> <label class="checkbox-label">Database logs</label> 
+
+    <h2>Random message</h2>
+    <button onclick="roll()">Roll</button> <br>
+    <div id="random-message-container"> </div>
+
+    <h2>Get message by ID</h2>
+    <input placeholder="69" style="width: 3em" id="id-inp"> <br>
+
+    <button onclick="find()">Find</button> <br>
+    <div id="message-id-container"> </div>
+
+    <button onclick="window.location.href = 'index.html'">Back</button> <br>
 
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
-    <script src="index.js"></script>
+    <script src="stats.js"></script>
 
 </body>
 </html>

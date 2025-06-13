@@ -34,7 +34,7 @@ label{
 }
 
 .checkbox-label{
-  margin-left: -90px;
+  margin-left: -240px;
 }
 
 p{
@@ -55,6 +55,13 @@ h2{
   color: #ffff;
   font-family: Arial;
   font-size: 2.5em;
+  margin-bottom: 10px;
+}
+
+h3{
+  color: #ffff;
+  font-family: Arial;
+  font-size: 2em;
   margin-bottom: 10px;
 }
 

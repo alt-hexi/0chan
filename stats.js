@@ -1,6 +1,3 @@
-let refreshInterval;
-const REFRESH_DELAY = 3000;
-
 const banwords = ["onerror", "onload", "onclick", "onmouseover", "onmouseenter", "onmouseleave",
   "onmouseup", "onmousedown", "onmousemove", "onwheel", "oncontextmenu",
   "onkeydown", "onkeypress", "onkeyup",
@@ -13,25 +10,6 @@ const banwords = ["onerror", "onload", "onclick", "onmouseover", "onmouseenter",
   "ontransitionstart", "ontransitionend", "ontransitioncancel",
   "onpointerdown", "onpointerup", "onpointermove", "onpointerenter", "onpointerleave", "onpointercancel", "window", 
   "document", "audio", "script", "<style>"];
-  
-function startAutoRefresh() {
-  if (refreshInterval) {
-    clearInterval(refreshInterval);
-  }
-
-  refreshInterval = setInterval(() => {
-    loadMessages();
-  }, REFRESH_DELAY);
-
-  loadMessages();
-}
-
-function stopAutoRefresh() {
-  if (refreshInterval) {
-    clearInterval(refreshInterval);
-    refreshInterval = null;
-  }
-}
 
 let messages = [];
 
@@ -55,30 +33,19 @@ document.addEventListener('click', () => {
 });
 
 function loadMessages() {
-  const old_length = messages.length;
   console.log("loading messages...");
   db.collection("users").doc("user1").get()
     .then((doc) => {
       if (doc.exists) {
         const data = doc.data();
         if (data.main) {
-          messages = data.main;
-          if(document.getElementById("log-inp")?.checked){
-            console.log(old_length);
-            console.log(messages.length);
-          }
-          if(old_length < messages.length) {
+            messages = data.main;
             displayMessages();
-            if(isUserInteracted) {
-              let sound = new Audio('sound/imsend.wav');
-              sound.play().catch(e => console.log("Sound play error:", e));
-            }
-          }
         }
       }
     })
     .catch((error) => {
-      console.log("Error occurred", error);
+        console.log("Error occurred", error);
     });
 }
 
@@ -150,11 +117,69 @@ function safeHTML(input) {
   return container.innerHTML;
 }
 
+function find(){
+    const id = parseInt(document.getElementById('id-inp').value);
+    console.log(id)
+    console.log(messages[id])
+    const messageContainer = document.getElementById("message-id-container");
+    const messageById = document.createElement("p");
+
+    let time;
+    if (messages[id].time && messages[id].time.toDate) {
+      time = messages[id].time.toDate();
+    } else if (messages[id].time) {
+      time = new Date(messages[id].time);
+    } else {
+      time = new Date();
+    }
+    messageContainer.innerHTML = '';
+    messageById.innerHTML = `
+      <h3>Message №${id}:</h3>
+      <strong>${safeHTML(messages[id - 1].username)}</strong>
+      <span style="color: #999999">
+        - ${time.getDate().toString().padStart(2, '0')}.${(time.getMonth() + 1).toString().padStart(2, '0')}.${time.getFullYear()}
+        ${time.getHours().toString().padStart(2, '0')}:${time.getMinutes().toString().padStart(2, '0')}:${time.getSeconds().toString().padStart(2, '0')} [${id}]
+      </span>
+      <br>${safeHTML(messages[id - 1].message)}
+    `;
+    messageContainer.appendChild(messageById);
+}
+
+function roll(){
+    id = Math.floor(Math.random() * messages.length + 1)
+    const RandomMessageContainer = document.getElementById("random-message-container");
+    const RandomMessage = document.createElement("p");
+
+    let time;
+    if (messages[id].time && messages[id].time.toDate) {
+      time = messages[id].time.toDate();
+    } else if (messages[id].time) {
+      time = new Date(messages[id].time);
+    } else {
+      time = new Date();
+    }
+    RandomMessageContainer.innerHTML = '';
+    RandomMessage.innerHTML = `
+      <h3>Message №${id}:</h3>
+      <strong>${safeHTML(messages[id + 1].username)}</strong>
+      <span style="color: #999999">
+        - ${time.getDate().toString().padStart(2, '0')}.${(time.getMonth() + 1).toString().padStart(2, '0')}.${time.getFullYear()}
+        ${time.getHours().toString().padStart(2, '0')}:${time.getMinutes().toString().padStart(2, '0')}:${time.getSeconds().toString().padStart(2, '0')} [${id}]
+      </span>
+      <br>${safeHTML(messages[id + 1].message)}
+    `;
+    RandomMessageContainer.appendChild(RandomMessage);
+}
+
 function displayMessages() {
   const container = document.getElementById('messages-container') || document.body;
   container.innerHTML = '';
 
   messages.forEach(msg => {
+    console.log(messages.findIndex(current_msg => {return current_msg == msg;}))
+    if((messages.findIndex(current_msg => {return current_msg == msg;}) + 1) % 100 != 0 && (messages.findIndex(current_msg => {return current_msg == msg;}) + 1)% 111 != 0){
+        return;
+    }
     const messageElement = document.createElement('p');
 
     let time;
@@ -177,6 +202,7 @@ function displayMessages() {
     ) return;
     // .replaceAll("<", "&lt;").replaceAll(">", "&gt;")
     messageElement.innerHTML = `
+      <h3>Message №${messages.findIndex(current_msg => {return current_msg == msg;}) + 1}:</h3>
       <strong>${safeHTML(msg.username)}</strong>
       <span style="color: #999999">
         - ${time.getDate().toString().padStart(2, '0')}.${(time.getMonth() + 1).toString().padStart(2, '0')}.${time.getFullYear()}
@@ -184,50 +210,9 @@ function displayMessages() {
       </span>
       <br>${safeHTML(msg.message)}
     `;
-    
     container.appendChild(messageElement);
-    if(document.getElementById("autoscroll-inp")?.checked){
-      window.scrollTo(0, document.body.scrollHeight);
-    }
 
   });
-}
-
-async function send() {
-  const username = document.getElementById("username-inp").value.trim() || 'Anonymous';
-  const messageText = document.getElementById("message-inp").value.trim();
-  if(document.getElementById("log-inp")?.checked){
-    console.log(JSON.stringify(messages))
-  }
-
-  if(messageText.includes("script") || messageText.includes("window") || messageText.includes("<style>") || messageText.includes("document")) return;
-  if(username.includes("script") || username.includes("window") || username.includes("<style>") || username.includes("document")) return;
-  if (!username) {
-    username = "Anonymous";
-  }
-
-  const newMessage = {
-    username: username,
-    message: messageText,
-    time: new Date()
-  };
-
-  try {
-    messages.push(newMessage);
-
-    await db.collection("users").doc("user1").set({
-      main: messages
-    }, { merge: true });
-
-    document.getElementById("message-inp").value = '';
-
-    displayMessages();
-  } catch (error) {
-    if(document.getElementById("log-inp")?.checked){
-      console.error("Error occured", error);
-    }
-    messages.pop();
-  }
 }
 
 document.addEventListener('DOMContentLoaded', () => {
