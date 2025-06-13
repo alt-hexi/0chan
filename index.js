@@ -10,7 +10,8 @@ const banwords = ["onerror", "onload", "onclick", "onmouseover", "onmouseenter",
   "oncopy", "oncut", "onpaste",
   "onanimationstart", "onanimationend", "onanimationiteration",
   "ontransitionstart", "ontransitionend", "ontransitioncancel",
-  "onpointerdown", "onpointerup", "onpointermove", "onpointerenter", "onpointerleave", "onpointercancel", "window", "document", "audio", "script", "<style>"];
+  "onpointerdown", "onpointerup", "onpointermove", "onpointerenter", "onpointerleave", "onpointercancel", "window", 
+  "document", "audio", "script", "<style>"];
 
 function startAutoRefresh() {
   if (refreshInterval) {
@@ -122,8 +123,8 @@ function displayMessages() {
       time = new Date();
     }
 
-    const lowerMessage = messageText.toLowerCase();
-    const lowerUsername = username.toLowerCase();
+    const lowerMessage = msg.message.toLowerCase();
+    const lowerUsername = msg.username.toLowerCase();
     
     if (
       banwords.some(word => lowerMessage.includes(word)) ||
@@ -151,10 +152,10 @@ async function send() {
   const username = document.getElementById("username-inp").value.trim() || 'Anonymous';
   const messageText = document.getElementById("message-inp").value.trim();
 
-  if (
+  /* if (
     banwords.some(word => messageText.includes(word)) ||
     banwords.some(word => username.includes(word))
-  ) return;
+  ) return; */
 
   const newMessage = {
     username,
