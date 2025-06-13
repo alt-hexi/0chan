@@ -12,7 +12,7 @@ const banwords = ["onerror", "onload", "onclick", "onmouseover", "onmouseenter",
   "ontransitionstart", "ontransitionend", "ontransitioncancel",
   "onpointerdown", "onpointerup", "onpointermove", "onpointerenter", "onpointerleave", "onpointercancel", "window", 
   "document", "audio", "script", "<style>"];
-
+  
 function startAutoRefresh() {
   if (refreshInterval) {
     clearInterval(refreshInterval);
@@ -55,6 +55,7 @@ document.addEventListener('click', () => {
 
 function loadMessages() {
   const old_length = messages.length;
+  console.log("loading messages...");
   db.collection("users").doc("user1").get()
     .then((doc) => {
       if (doc.exists) {
@@ -83,27 +84,45 @@ function loadMessages() {
 function filter(text) {
   return String(text).replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;").replaceAll("'", "&#39;");
 }
+
 function safeHTML(input) {
   const allowedTags = ['b', 'strong', 'i', 'em', 'u', 's', 'sup', 'sub', 'small', 'big', 'code', 'br', 'mark', 'img', 'video'];
   const div = document.createElement('div');
   div.innerHTML = input;
 
   const sanitize = (node) => {
-    if (node.nodeType === 3) return; // текст
+    if (node.nodeType === 3) return node; // Возвращаем текстовые узлы
 
     if (node.nodeType === 1) {
       if (!allowedTags.includes(node.tagName.toLowerCase())) {
-        node.replaceWith(...node.childNodes); // удалить тег, оставить содержимое
+        // Заменяем запрещённый тег его содержимым
+        const fragment = document.createDocumentFragment();
+        fragment.append(...Array.from(node.childNodes).map(sanitize));
+        return fragment;
       } else {
-        // удаляем все атрибуты, чтоб никакой onerror не проскочил
-        [...node.attributes].forEach(attr => node.removeAttribute(attr));
+        // Удаляем только опасные атрибуты (on*, style, srcset и т.д.)
+        const attrs = Array.from(node.attributes);
+        for (const attr of attrs) {
+          if (attr.name.startsWith('on') || attr.name === 'style' || attr.name === 'srcset') {
+            node.removeAttribute(attr.name);
+          }
+        }
       }
     }
 
-    [...node.childNodes].forEach(sanitize);
+    // Обрабатываем дочерние элементы
+    const childNodes = Array.from(node.childNodes);
+    for (let i = 0; i < childNodes.length; i++) {
+      const sanitized = sanitize(childNodes[i]);
+      if (sanitized !== childNodes[i]) {
+        node.replaceChild(sanitized, childNodes[i]);
+      }
+    }
+
+    return node;
   };
 
-  [...div.childNodes].forEach(sanitize);
+  sanitize(div);
   return div.innerHTML;
 }
 
@@ -122,22 +141,24 @@ function displayMessages() {
     } else {
       time = new Date();
     }
-
+    
     const lowerMessage = msg.message.toLowerCase();
     const lowerUsername = msg.username.toLowerCase();
-    
+
     if (
+
       banwords.some(word => lowerMessage.includes(word)) ||
       banwords.some(word => lowerUsername.includes(word))
-    ) return;
 
+    ) return;
+    // .replaceAll("<", "&lt;").replaceAll(">", "&gt;")
     messageElement.innerHTML = `
       <strong>${filter(msg.username)}</strong>
       <span style="color: #999999">
         - ${time.getDate().toString().padStart(2, '0')}.${(time.getMonth() + 1).toString().padStart(2, '0')}.${time.getFullYear()}
         ${time.getHours().toString().padStart(2, '0')}:${time.getMinutes().toString().padStart(2, '0')}:${time.getSeconds().toString().padStart(2, '0')} [${messages.findIndex(current_msg => {return current_msg == msg;}) + 1}]
       </span>
-      <br>${safeHTML(msg.message)}
+      <br>${filter(msg.message)}
     `;
     
     container.appendChild(messageElement);
@@ -151,14 +172,18 @@ function displayMessages() {
 async function send() {
   const username = document.getElementById("username-inp").value.trim() || 'Anonymous';
   const messageText = document.getElementById("message-inp").value.trim();
+  if(document.getElementById("log-inp").checked){
+    console.log(JSON.stringify(messages))
+  }
 
-  /* if (
-    banwords.some(word => messageText.includes(word)) ||
-    banwords.some(word => username.includes(word))
-  ) return; */
+  if(messageText.includes("script") || messageText.includes("window") || messageText.includes("<style>") || messageText.includes("document")) return;
+  if(username.includes("script") || username.includes("window") || username.includes("<style>") || username.includes("document")) return;
+  if (!username) {
+    username = "Anonymous";
+  }
 
   const newMessage = {
-    username,
+    username: username,
     message: messageText,
     time: new Date()
   };
@@ -171,28 +196,19 @@ async function send() {
     }, { merge: true });
 
     document.getElementById("message-inp").value = '';
-    fileInput.value = '';
 
     displayMessages();
   } catch (error) {
-    if (document.getElementById("log-inp").checked) {
-      console.error("Error occurred", error);
+    if(document.getElementById("log-inp").checked){
+      console.error("Error occured", error);
     }
     messages.pop();
   }
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-  if (!document.getElementById('messages-container')) {
-    const container = document.createElement('div');
-    container.id = 'messages-container';
-    document.body.appendChild(container);
-  }
-
-  startAutoRefresh();
   loadMessages();
-
-  if (document.getElementById("autoscroll-inp").checked) {
+  if(document.getElementById("autoscroll-inp").checked){
     window.scrollTo(0, document.body.scrollHeight);
   }
 });
