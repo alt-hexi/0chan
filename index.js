@@ -153,12 +153,12 @@ function displayMessages() {
     ) return;
     // .replaceAll("<", "&lt;").replaceAll(">", "&gt;")
     messageElement.innerHTML = `
-      <strong>${filter(msg.username)}</strong>
+      <strong>${safeHTML(msg.username)}</strong>
       <span style="color: #999999">
         - ${time.getDate().toString().padStart(2, '0')}.${(time.getMonth() + 1).toString().padStart(2, '0')}.${time.getFullYear()}
         ${time.getHours().toString().padStart(2, '0')}:${time.getMinutes().toString().padStart(2, '0')}:${time.getSeconds().toString().padStart(2, '0')} [${messages.findIndex(current_msg => {return current_msg == msg;}) + 1}]
       </span>
-      <br>${filter(msg.message)}
+      <br>${safeHTML(msg.message)}
     `;
     
     container.appendChild(messageElement);
